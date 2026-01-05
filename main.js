@@ -6014,54 +6014,35 @@ function setupEventListeners() {
 
 // Handle iframe load - FIXED: Delayed error checking
 // Handle iframe load (FIXED: delayed + multi-check validation)
+// Handle iframe load - FIXED: Check for existing errors first
 function handleIframeLoad() {
+  // If we already showed a custom error (like GitHub 50MB), don't hide it
+  if (lastError) {
+    // Don't hide the error - keep it visible
+    return;
+  }
+  
   hideLoading();
+  hideError(); // Only hide error if we didn't already show one
+}
 
-  const MAX_CHECKS = 5;      // how many times we re-check
-  const CHECK_DELAY = 700;  // ms between checks
-  let checks = 0;
-
-  const validateIframe = () => {
-    checks++;
-
-    try {
-      const iframeDoc =
-        gameIframe.contentDocument ||
-        gameIframe.contentWindow?.document;
-
-      const body = iframeDoc?.body;
-      const text = body?.innerText?.trim() || '';
-      const htmlLength = body?.innerHTML?.length || 0;
-
-      // SUCCESS CONDITIONS
-      if (
-        htmlLength > 300 ||               // real content
-        body?.children?.length > 1 ||     // DOM loaded
-        iframeDoc.readyState === 'complete'
-      ) {
-        hideError();
-        return;
-      }
-
-      // Retry check instead of failing immediately
-      if (checks < MAX_CHECKS) {
-        setTimeout(validateIframe, CHECK_DELAY);
-        return;
-      }
-
-      // Still bad after all retries → show error
+// Handle iframe error - FIXED: Check for existing errors first
+function handleIframeError() {
+  // If we already showed a custom error, don't override it
+  if (lastError) {
+    return;
+  }
+  
+  setTimeout(() => {
+    // If iframe is still blank after delay → real error
+    if (!gameIframe.src || gameIframe.src === 'about:blank') {
+      hideLoading();
       showError(
-        'The game loaded, but didn’t respond correctly.',
-        'The page finished loading but did not generate enough content. This usually means the game is still booting, blocked by CORS, or requires a direct navigation.'
+        'The game failed to load.',
+        'The iframe did not receive any content. This is usually caused by a network error, a blocked request, or the game URL returning an invalid response.'
       );
-
-    } catch (err) {
-      // Cross-origin = NOT an error
-      hideError();
     }
-  };
-
-  setTimeout(validateIframe, CHECK_DELAY);
+  }, 1200);
 }
 
 
@@ -6153,6 +6134,7 @@ function toggleFullscreen(element) {
 }
 
 // Function to load game using Blob URL trick
+// Function to load game using Blob URL trick
 async function loadGameInIframe(gameUrl, gameTitle) {
   try {
     hideError();
@@ -6185,14 +6167,16 @@ async function loadGameInIframe(gameUrl, gameTitle) {
          =============================== */
       if (
         htmlContent.includes('Package size exceeded the configured limit') ||
-        htmlContent.includes('Try https://github.com/')
+        htmlContent.includes('Try https://github.com/') ||
+        htmlContent.includes('50 MB file size limit')
       ) {
         hideLoading();
+        gameIframe.src = 'about:blank'; // Keep iframe blank
 
         showError(
-          'This game cannot be loaded.',
+          'This game cannot be loaded. 💔',
           `
-The game HTML file does not exist or exceeds GitHub’s 50 MB file limit.
+The game HTML file does not exist or exceeds GitHub's 50 MB file limit.
 
 This usually means:
 • The HTML file was never uploaded
@@ -6204,6 +6188,8 @@ Open the repository folder directly and verify the HTML file exists.
           `.trim()
         );
 
+        // Store this as the last error to prevent auto-clearing
+        lastError = 'github_50mb_limit';
         return false;
       }
 
@@ -6212,9 +6198,24 @@ Open the repository folder directly and verify the HTML file exists.
          =============================== */
       if (
         !htmlContent.includes('<html') &&
-        !htmlContent.includes('<!DOCTYPE')
+        !htmlContent.includes('<!DOCTYPE') &&
+        htmlContent.length < 100 // Also check for very short responses
       ) {
-        throw new Error('Response is not valid HTML');
+        hideLoading();
+        gameIframe.src = 'about:blank';
+        
+        showError(
+          'Invalid HTML content. 💔',
+          `
+The server returned content that doesn't look like valid HTML.
+
+Response length: ${htmlContent.length} characters
+First 100 chars: ${htmlContent.substring(0, 100)}...
+          `.trim()
+        );
+        
+        lastError = 'invalid_html';
+        return false;
       }
 
       /* ===============================
@@ -6230,15 +6231,17 @@ Open the repository folder directly and verify the HTML file exists.
       }
       window.previousBlobUrl = blobUrl;
 
+      // Reset error state since we successfully loaded
+      lastError = null;
       return true;
 
     } catch (fetchError) {
       clearTimeout(timeoutId);
-
       hideLoading();
+      gameIframe.src = 'about:blank';
 
       showError(
-        'The game failed to load.',
+        'The game failed to load. 💔',
         `
 Fetch failed or was blocked.
 
@@ -6252,14 +6255,16 @@ This may be caused by:
         `.trim()
       );
 
+      lastError = 'fetch_error';
       return false;
     }
 
   } catch (fatalError) {
     hideLoading();
+    gameIframe.src = 'about:blank';
 
     showError(
-      'Unexpected loader error.',
+      'Unexpected loader error. 💔',
       `
 A fatal error occurred while preparing the game.
 
@@ -6268,6 +6273,7 @@ ${fatalError.message}
       `.trim()
     );
 
+    lastError = 'fatal_error';
     return false;
   }
 }
@@ -6391,10 +6397,10 @@ function closeGameOverlay() {
     window.previousBlobUrl = null;
   }
   
-  // Reset current game
+  // Reset current game and error state
   currentGame = null;
   currentGameUrl = '';
-  lastError = null;
+  lastError = null; // Reset error state
   
   // Restore body scroll
   document.body.style.overflow = '';
