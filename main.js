@@ -6013,231 +6013,33 @@ ${document.documentElement.outerHTML}
     }
 
     // Handle iframe load
-    // Replace the handleIframeLoad and handleIframeError functions with these improved versions:
-
-// Handle iframe load
-function handleIframeLoad() {
-  console.log('Iframe loaded successfully');
-  hideLoading();
-  
-  // Give the game more time to load before checking for errors
-  setTimeout(() => {
-    try {
-      const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
-      const bodyContent = iframeDoc.body?.innerText || '';
-      const bodyHTML = iframeDoc.body?.innerHTML || '';
+    function handleIframeLoad() {
+      hideLoading();
       
-      // Only show error for very specific error patterns, not just minimal content
-      // Some games have minimal HTML by design
-      const isLikelyError = bodyContent.includes('404') || 
-                           bodyContent.includes('Not Found') ||
-                           bodyContent.includes('Error 404') ||
-                           bodyContent.includes('Page not found') ||
-                           (bodyContent.includes('Error') && bodyContent.length < 200) || // Only if "Error" AND very short content
-                           (bodyHTML.includes('<title>') && 
-                            (bodyHTML.includes('404') || bodyHTML.includes('Not Found')));
-      
-      // Check if iframe actually has some meaningful content
-      const hasMinimalContent = bodyHTML.length < 100 || 
-                               (iframeDoc.querySelector('body') && 
-                                iframeDoc.body.children.length === 0);
-      
-      if (isLikelyError && hasMinimalContent) {
-        showErrorWithDetails('The game might not be loading properly 😢', {
-          errorType: 'Page not found',
-          details: 'The game page appears to be empty or returns a 404 error.',
-          suggestion: 'Try refreshing or pick another game.',
-          gameUrl: currentGameUrl
-        });
-      }
-    } catch (e) {
-      // Cross-origin error is normal - game loaded successfully
-      console.log('Game loaded (cross-origin):', currentGame?.title);
+      // Check if the iframe loaded actual content or just an error
+      setTimeout(() => {
+        try {
+          const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
+          const bodyContent = iframeDoc.body?.innerText || '';
+          
+          // Check for common error messages
+          if (bodyContent.includes('404') || 
+              bodyContent.includes('Not Found') || 
+              bodyContent.includes('Error') ||
+              bodyContent.length < 50) { // Very little content = probably an error page
+            showError('Oops! This game might be taking a nap 😴<br>Try again or pick another game!');
+          }
+        } catch (e) {
+          // Cross-origin error is expected, ignore
+        }
+      }, 500);
     }
-  }, 2000); // Increased to 2 seconds to give games more time to load
-}
 
-// Handle iframe error
-function handleIframeError() {
-  console.error('Iframe error event fired');
-  hideLoading();
-  
-  // Don't show error immediately - some games trigger error events during loading
-  // Wait a bit to see if the game actually loads
-  setTimeout(() => {
-    try {
-      const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
-      const bodyHTML = iframeDoc.body?.innerHTML || '';
-      
-      // If we have content, the game loaded despite the error event
-      if (bodyHTML.length > 50) {
-        console.log('Game loaded despite error event');
-        return;
-      }
-      
-      // Only show error if truly empty
-      showErrorWithDetails('Game failed to load properly 🚧', {
-        errorType: 'Network or loading error',
-        details: 'The game could not be loaded. This might be due to network issues or the game file being inaccessible.',
-        suggestion: 'Check your internet connection and try again.',
-        gameUrl: currentGameUrl
-      });
-    } catch (e) {
-      // Cross-origin, can't check content
-      showErrorWithDetails('Game might have loading issues 😔', {
-        errorType: 'Cross-origin loading error',
-        details: 'The game is from a different origin and might have loading restrictions.',
-        suggestion: 'Try the "Retry" button or use the alternative view.',
-        gameUrl: currentGameUrl
-      });
+    // Handle iframe error
+    function handleIframeError() {
+      hideLoading();
+      showError('Whoopsie! The game took a wrong turn 🚧<br>Try clicking "Retry" or choose another game!');
     }
-  }, 1500);
-}
-
-// Replace the showError function with this enhanced version:
-function showErrorWithDetails(message, errorInfo = {}) {
-  const { errorType = 'Unknown Error', details = 'No additional details', suggestion = 'Try again or pick another game.', gameUrl = '' } = errorInfo;
-  
-  // Store error info for advanced view
-  window.lastErrorInfo = errorInfo;
-  
-  gameError.querySelector('div').innerHTML = `
-    <div style="text-align: center;">
-      <div style="font-size: 2rem; margin-bottom: 1rem;">😔💔</div>
-      ${message}
-      
-      <div style="margin-top: 1.5rem; font-size: 0.9rem;">
-        <details style="cursor: pointer; color: var(--valentine-pink);">
-          <summary>🔧 Advanced Error View</summary>
-          <div style="text-align: left; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 5px; font-family: monospace; font-size: 0.8rem;">
-            <div><strong>Error Type:</strong> ${errorType}</div>
-            <div><strong>Details:</strong> ${details}</div>
-            <div><strong>Suggestion:</strong> ${suggestion}</div>
-            ${gameUrl ? `<div><strong>Game URL:</strong> <a href="${gameUrl}" target="_blank" style="color: var(--valentine-pink);">${gameUrl}</a></div>` : ''}
-            <div><strong>Timestamp:</strong> ${new Date().toLocaleTimeString()}</div>
-            ${currentGame ? `<div><strong>Game ID:</strong> ${currentGame.id} - ${currentGame.title}</div>` : ''}
-            <div style="margin-top: 0.5rem;">
-              <button onclick="copyErrorDetails()" style="background: var(--valentine-pink); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem; cursor: pointer;">
-                📋 Copy Error Details
-              </button>
-            </div>
-          </div>
-        </details>
-      </div>
-      
-      <div style="margin-top: 1rem;">
-        <small>You can still try playing the game - sometimes errors appear but the game still works!</small>
-      </div>
-    </div>
-  `;
-  
-  gameError.classList.add('active');
-}
-
-// Function to copy error details to clipboard
-function copyErrorDetails() {
-  if (!window.lastErrorInfo) return;
-  
-  const errorText = `
-Diesmos Game Error Report
-=========================
-Error Time: ${new Date().toLocaleString()}
-Game: ${currentGame?.title || 'Unknown'}
-Game ID: ${currentGame?.id || 'N/A'}
-Error Type: ${window.lastErrorInfo.errorType}
-Details: ${window.lastErrorInfo.details}
-Suggestion: ${window.lastErrorInfo.suggestion}
-Game URL: ${window.lastErrorInfo.gameUrl || 'N/A'}
-User Agent: ${navigator.userAgent}
-  `.trim();
-  
-  navigator.clipboard.writeText(errorText)
-    .then(() => {
-      const copyBtn = gameError.querySelector('button');
-      if (copyBtn) {
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = '✅ Copied!';
-        copyBtn.style.background = '#4CAF50';
-        setTimeout(() => {
-          copyBtn.textContent = originalText;
-          copyBtn.style.background = 'var(--valentine-pink)';
-        }, 2000);
-      }
-    })
-    .catch(err => {
-      console.error('Failed to copy:', err);
-    });
-}
-
-// Also update the retryGameLoad function to include more debugging:
-function retryGameLoad() {
-  if (currentGame && currentGameUrl) {
-    hideError();
-    showLoading();
-    
-    console.log('Retrying game load:', {
-      game: currentGame.title,
-      url: currentGameUrl,
-      time: new Date().toISOString()
-    });
-    
-    // Try different loading strategies
-    const loadingStrategies = [
-      // Strategy 1: Direct load with cache busting
-      () => {
-        const cacheBustUrl = currentGameUrl + (currentGameUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
-        gameIframe.src = cacheBustUrl;
-      },
-      // Strategy 2: Proxy through a simple redirect page
-      () => {
-        const proxyHtml = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta http-equiv="refresh" content="0; url=${currentGameUrl}">
-            </head>
-            <body>
-              <p>Redirecting to game... <a href="${currentGameUrl}">Click here if not redirected</a></p>
-            </body>
-          </html>
-        `;
-        const blob = new Blob([proxyHtml], { type: 'text/html' });
-        const blobUrl = URL.createObjectURL(blob);
-        gameIframe.src = blobUrl;
-      }
-    ];
-    
-    // Try the next strategy each retry
-    if (!window.retryCount) window.retryCount = 0;
-    const strategyIndex = window.retryCount % loadingStrategies.length;
-    
-    loadingStrategies[strategyIndex]();
-    window.retryCount++;
-  }
-}
-
-// Add this function to test if the game is actually playable despite errors:
-function testGamePlayability() {
-  if (!gameIframe.contentWindow) return 'Unknown (cross-origin)';
-  
-  try {
-    const iframeDoc = gameIframe.contentDocument;
-    if (!iframeDoc) return 'Cross-origin (no access)';
-    
-    const hasCanvas = iframeDoc.querySelector('canvas');
-    const hasGameElements = iframeDoc.querySelector('canvas, #game, .game, [class*="game"], [id*="game"]');
-    const hasInteractive = iframeDoc.querySelector('button, input, [onclick]');
-    
-    if (hasCanvas) return 'Canvas game detected - likely playable';
-    if (hasGameElements) return 'Game elements found - likely playable';
-    if (hasInteractive) return 'Interactive elements found - may be playable';
-    
-    return 'Minimal content - might not be playable';
-  } catch (e) {
-    return 'Cross-origin - cannot inspect';
-  }
-}
-  
 
     // Handle fullscreen changes
     function handleFullscreenChange() {
