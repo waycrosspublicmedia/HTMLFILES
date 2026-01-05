@@ -6154,6 +6154,8 @@ function toggleFullscreen(element) {
 
 // Function to load game using Blob URL trick
 async function loadGameInIframe(gameUrl, gameTitle) {
+  let fatalErrorShown = false;
+
   try {
     hideError();
     showLoading();
@@ -6187,6 +6189,7 @@ async function loadGameInIframe(gameUrl, gameTitle) {
         htmlContent.includes('Package size exceeded the configured limit') ||
         htmlContent.includes('Try https://github.com/')
       ) {
+        fatalErrorShown = true;
         hideLoading();
 
         showError(
@@ -6235,6 +6238,8 @@ Open the repository folder directly and verify the HTML file exists.
     } catch (fetchError) {
       clearTimeout(timeoutId);
 
+      if (fatalErrorShown) return false;
+
       hideLoading();
 
       showError(
@@ -6256,6 +6261,8 @@ This may be caused by:
     }
 
   } catch (fatalError) {
+    if (fatalErrorShown) return false;
+
     hideLoading();
 
     showError(
@@ -6271,6 +6278,7 @@ ${fatalError.message}
     return false;
   }
 }
+
 
 
 // Show/hide loading/error states - FIXED: Better error handling
