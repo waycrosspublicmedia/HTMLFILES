@@ -6013,82 +6013,73 @@ function setupEventListeners() {
 }
 
 // Handle iframe load - FIXED: Delayed error checking
+// Handle iframe load (FIXED: delayed + multi-check validation)
 function handleIframeLoad() {
-  // Clear any existing error timeout
-  if (errorTimeout) {
-    clearTimeout(errorTimeout);
-    errorTimeout = null;
-  }
-  
-  // Show loading for at least 2 seconds to prevent flickering
-  setTimeout(() => {
-    hideLoading();
-    
-    // Check if the iframe loaded actual content
-    setTimeout(() => {
-      try {
-        const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
-        const bodyContent = iframeDoc.body?.innerText || '';
-        
-        // Check for common error messages
-        if (bodyContent.includes('404') || 
-            bodyContent.includes('Not Found') || 
-            bodyContent.includes('Error') ||
-            bodyContent.includes('Page not found') ||
-            (bodyContent.length < 100 && !bodyContent.includes('game'))) { // Very little content = probably an error page
-          
-          // Store error info
-          lastError = {
-            type: 'Content Error',
-            message: 'Loaded page appears to be an error page',
-            details: `Content length: ${bodyContent.length} chars`,
-            timestamp: new Date().toISOString()
-          };
-          
-          // Show error after delay
-          setTimeout(() => {
-            showError('Game loaded but appears to be an error page. Trying alternative methods...');
-          }, 500);
-        }
-      } catch (e) {
-        // Cross-origin error is expected, ignore
-        console.log('Cross-origin check completed');
-      }
-    }, 1000);
-  }, 2000);
-}
+  hideLoading();
 
-// Handle iframe error - FIXED: Delayed error display
-function handleIframeError() {
-  // Clear any existing timeout
-  if (errorTimeout) {
-    clearTimeout(errorTimeout);
-  }
-  
-  // Set a timeout to show error only after 3 seconds
-  errorTimeout = setTimeout(() => {
-    // Check if iframe is actually loaded
+  const MAX_CHECKS = 5;      // how many times we re-check
+  const CHECK_DELAY = 700;  // ms between checks
+  let checks = 0;
+
+  const validateIframe = () => {
+    checks++;
+
     try {
-      if (gameIframe.contentWindow.location.href !== 'about:blank') {
-        // Iframe has loaded something, don't show error
-        hideLoading();
+      const iframeDoc =
+        gameIframe.contentDocument ||
+        gameIframe.contentWindow?.document;
+
+      const body = iframeDoc?.body;
+      const text = body?.innerText?.trim() || '';
+      const htmlLength = body?.innerHTML?.length || 0;
+
+      // SUCCESS CONDITIONS
+      if (
+        htmlLength > 300 ||               // real content
+        body?.children?.length > 1 ||     // DOM loaded
+        iframeDoc.readyState === 'complete'
+      ) {
+        hideError();
         return;
       }
-    } catch (e) {
-      // Cross-origin error, continue with error display
+
+      // Retry check instead of failing immediately
+      if (checks < MAX_CHECKS) {
+        setTimeout(validateIframe, CHECK_DELAY);
+        return;
+      }
+
+      // Still bad after all retries → show error
+      showError(
+        'The game loaded, but didn’t respond correctly.',
+        'The page finished loading but did not generate enough content. This usually means the game is still booting, blocked by CORS, or requires a direct navigation.'
+      );
+
+    } catch (err) {
+      // Cross-origin = NOT an error
+      hideError();
     }
-    
-    // Store error info
-    lastError = {
-      type: 'Iframe Error',
-      message: 'Iframe failed to load content',
-      details: 'Network error or CORS issue',
-      timestamp: new Date().toISOString()
-    };
-    
-    showError('Game is taking longer than expected to load...<br>Still trying in background!');
-  }, 3000);
+  };
+
+  setTimeout(validateIframe, CHECK_DELAY);
 }
+
+
+// Handle iframe error - FIXED: Delayed error display
+// Handle iframe error (FIXED: delayed confirmation)
+function handleIframeError() {
+  setTimeout(() => {
+    // If iframe is still blank after delay → real error
+    if (!gameIframe.src || gameIframe.src === 'about:blank') {
+      hideLoading();
+      showError(
+        'The game failed to load.',
+        'The iframe did not receive any content. This is usually caused by a network error, a blocked request, or the game URL returning an invalid response.'
+      );
+    }
+  }, 1200);
+}
+
 
 // Handle fullscreen changes
 function handleFullscreenChange() {
@@ -6354,71 +6345,47 @@ function hideLoading() {
   gameLoading.classList.remove('active');
 }
 
-function showError(message) {
-  // Create advanced view dropdown
-  const advancedView = lastError ? `
-    <div style="margin-top: 1rem; text-align: left;">
-      <details style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; cursor: pointer;">
-        <summary style="font-weight: bold; color: #ff66b2;">⚙️ Advanced Error Details</summary>
-        <div style="margin-top: 10px; font-family: monospace; font-size: 0.8rem; overflow-x: auto;">
-          <div><strong>Error Type:</strong> ${lastError.type}</div>
-          <div><strong>Message:</strong> ${lastError.message}</div>
-          <div><strong>Details:</strong> ${lastError.details}</div>
-          <div><strong>Time:</strong> ${new Date(lastError.timestamp).toLocaleTimeString()}</div>
-          <div><strong>Game URL:</strong> <span style="word-break: break-all;">${currentGameUrl}</span></div>
+// Show error with advanced crash details
+function showError(userMessage, technicalReason = 'Unknown error') {
+  gameError.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:0.5rem;">😔💔</div>
+
+      <div style="margin-bottom:0.75rem;">
+        ${userMessage}
+      </div>
+
+      <details style="
+        margin-top:0.5rem;
+        text-align:left;
+        background:rgba(0,0,0,0.4);
+        padding:0.75rem;
+        border-radius:6px;
+        font-size:0.85rem;
+      ">
+        <summary style="cursor:pointer;color:#ff9ad5;">
+          Advanced details
+        </summary>
+
+        <div style="margin-top:0.5rem;line-height:1.4;">
+          <strong>Possible reason:</strong><br>
+          ${technicalReason}<br><br>
+
+          <strong>Game URL:</strong><br>
+          <code style="word-break:break-all;">
+            ${currentGameUrl || 'Unknown'}
+          </code><br><br>
+
+          <strong>Load method:</strong><br>
+          Blob / iframe hybrid loader
         </div>
       </details>
-      <button id="copyErrorBtn" style="margin-top: 10px; padding: 5px 10px; background: #ff66b2; color: white; border: none; border-radius: 3px; cursor: pointer;">
-        📋 Copy Error Details
-      </button>
-    </div>
-  ` : '';
-  
-  gameError.querySelector('div').innerHTML = `
-    <div style="text-align: center;">
-      <div style="font-size: 2rem; margin-bottom: 1rem;">🎮⏳</div>
-      ${message}
-      ${advancedView}
-      <div style="margin-top: 1rem; font-size: 0.9rem; color: #ffcc00;">
-        The game might still load in the background! Check below...
-      </div>
     </div>
   `;
-  
+
   gameError.classList.add('active');
-  
-  // Add copy error button functionality
-  const copyErrorBtn = document.getElementById('copyErrorBtn');
-  if (copyErrorBtn && lastError) {
-    copyErrorBtn.addEventListener('click', () => {
-      const errorText = `Diesmos Game Error Report:
-Type: ${lastError.type}
-Message: ${lastError.message}
-Details: ${lastError.details}
-Game URL: ${currentGameUrl}
-Time: ${new Date(lastError.timestamp).toLocaleString()}`;
-      
-      navigator.clipboard.writeText(errorText).then(() => {
-        const originalText = copyErrorBtn.textContent;
-        copyErrorBtn.textContent = '✅ Copied!';
-        setTimeout(() => {
-          copyErrorBtn.textContent = originalText;
-        }, 2000);
-      });
-    });
-  }
-  
-  // Auto-hide error after 5 seconds if game seems to be loading
-  setTimeout(() => {
-    try {
-      if (gameIframe.contentWindow && gameIframe.contentWindow.location.href !== 'about:blank') {
-        hideError();
-      }
-    } catch (e) {
-      // Ignore cross-origin errors
-    }
-  }, 5000);
 }
+
 
 function hideError() {
   gameError.classList.remove('active');
