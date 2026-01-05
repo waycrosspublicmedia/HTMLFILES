@@ -6013,44 +6013,42 @@ ${document.documentElement.outerHTML}
     }
 
     // Handle iframe load
-    let iframeErrorShown = false;
-
-function handleIframeLoad() {
+    function handleIframeLoad() {
   hideLoading();
 
-  iframeErrorShown = false;
-
-  // Give the game time to actually start
+  // Give the game time to initialize
   setTimeout(() => {
-    // If iframe navigated away or closed, abort
-    if (!gameIframe.src || gameIframe.src === 'about:blank') return;
-
     try {
-      // ⚠️ This will FAIL for cross-origin games — that's GOOD
-      const iframeDoc = gameIframe.contentDocument;
+      const iframeDoc =
+        gameIframe.contentDocument ||
+        gameIframe.contentWindow?.document;
 
+      // If we can't read it, it's cross-origin → assume success
       if (!iframeDoc || !iframeDoc.body) return;
 
-      const text = iframeDoc.body.innerText || '';
+      const title = iframeDoc.title?.toLowerCase() || '';
+      const text = iframeDoc.body.innerText?.toLowerCase() || '';
 
-      // Only detect VERY explicit error pages
-      const isHardError =
-        text.includes('404 Not Found') ||
-        text.includes('Page Not Found') ||
-        text.includes('File not found') ||
-        text.includes('This site can’t be reached');
+      // Only catch REAL error pages
+      const isRealError =
+        title.includes('404') ||
+        title.includes('not found') ||
+        title.includes('error') ||
+        text.startsWith('404') ||
+        text.includes('page not found');
 
-      if (isHardError && !iframeErrorShown) {
-        iframeErrorShown = true;
+      if (isRealError) {
         showError(
-          'Oops! This game failed to load 💔<br>Try Retry or choose another one!'
+          'Oops! This game failed to load 😔<br>' +
+          'Try again or pick another game!'
         );
       }
+
     } catch (err) {
-      // ✅ Cross-origin = assume success
-      // DO NOT show error
+      // Cross-origin access error = expected & healthy
+      return;
     }
-  }, 2000); // ⬅️ increased delay
+  }, 1000); // longer delay = more reliable
 }
 
 
