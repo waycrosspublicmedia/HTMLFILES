@@ -1,64 +1,63 @@
+// URL Translation Functions with improved extraction
+function translateImageUrl(oldUrl) {
+  if (!oldUrl) return '';
+  
+  // Extract filename from any path
+  const filename = oldUrl.split('/').pop();
+  
+  // Always use the new image CDN
+  return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/images@main/${filename}`;
+}
 
-    // URL Translation Functions with improved extraction
-    function translateImageUrl(oldUrl) {
-      if (!oldUrl) return '';
-      
-      // Extract filename from any path
-      const filename = oldUrl.split('/').pop();
-      
-      // Always use the new image CDN
-      return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/images@main/${filename}`;
+function translateGameUrl(oldUrl) {
+  if (!oldUrl) return '';
+  
+  // Handle player.html?game= format
+  if (oldUrl.includes('player.html?game=')) {
+    // Extract the actual game URL
+    const urlMatch = oldUrl.match(/player\.html\?game=(.+)/);
+    if (urlMatch && urlMatch[1]) {
+      const gameUrl = decodeURIComponent(urlMatch[1]);
+      return extractGamePath(gameUrl);
     }
+  }
+  
+  // Handle direct URLs
+  return extractGamePath(oldUrl);
+}
 
-    function translateGameUrl(oldUrl) {
-      if (!oldUrl) return '';
-      
-      // Handle player.html?game= format
-      if (oldUrl.includes('player.html?game=')) {
-        // Extract the actual game URL
-        const urlMatch = oldUrl.match(/player\.html\?game=(.+)/);
-        if (urlMatch && urlMatch[1]) {
-          const gameUrl = decodeURIComponent(urlMatch[1]);
-          return extractGamePath(gameUrl);
-        }
-      }
-      
-      // Handle direct URLs
-      return extractGamePath(oldUrl);
-    }
+function extractGamePath(fullUrl) {
+  // Remove protocol and domain to get the path
+  let path = fullUrl;
+  
+  // Remove https://chicken.parmacitieschools.org/
+  if (path.includes('https://chicken.parmacitieschools.org/')) {
+    path = path.replace('https://chicken.parmacitieschools.org/', '');
+  }
+  
+  // Remove trailing slash
+  path = path.replace(/\/$/, '');
+  
+  // Extract the folder structure (e.g., "whatver/vex2" or "livediesmos/vex2")
+  const parts = path.split('/');
+  if (parts.length < 1) return ''; // Changed from < 2 to handle single part URLs
+  
+  // Special case: Single domain link like "bdfi26"
+  if (parts.length === 1) {
+    const gameName = parts[0];
+    return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/waycrosspublicmedia/${gameName}.html`;
+  }
+  
+  const urlPath = parts.slice(0, -1).join('/'); // Get everything except the last part
+  const gameName = parts.pop(); // Get the last part (game name)
+  
+  // Construct the new URL
+  return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${urlPath}/${gameName}.html`;
+}
 
-    function extractGamePath(fullUrl) {
-      // Remove protocol and domain to get the path
-      let path = fullUrl;
-      
-      // Remove https://chicken.parmacitieschools.org/
-      if (path.includes('https://chicken.parmacitieschools.org/')) {
-        path = path.replace('https://chicken.parmacitieschools.org/', '');
-      }
-      
-      // Remove trailing slash
-      path = path.replace(/\/$/, '');
-      
-      // Extract the folder structure (e.g., "whatver/vex2" or "livediesmos/vex2")
-      const parts = path.split('/');
-      if (parts.length < 1) return ''; // Changed from < 2 to handle single part URLs
-      
-      // Special case: Single domain link like "bdfi26"
-      if (parts.length === 1) {
-        const gameName = parts[0];
-        return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/waycrosspublicmedia/${gameName}.html`;
-      }
-      
-      const urlPath = parts.slice(0, -1).join('/'); // Get everything except the last part
-      const gameName = parts.pop(); // Get the last part (game name)
-      
-      // Construct the new URL
-      return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/HTMLFILES@main/${urlPath}/${gameName}.html`;
-    }
-
-    // Sample game data
-    const games = [
-       {
+// Sample game data
+const games = [
+   {
     id: 1,
     title: "Anti Terrorist Rush",
     image: "https://chicken.parmacitieschools.org/images/anti-terrorist-rush.jpg",
@@ -5679,59 +5678,61 @@
     url: "player.html?game=https://chicken.parmacitieschools.org/fnf/redux/",
     isNew: true
   },
-    ];
+];
 
-    // DOM Elements
-    const gamesGrid = document.getElementById('gamesGrid');
-    const favoritesContainer = document.getElementById('favoritesContainer');
-    const gameCount = document.getElementById('gameCount');
-    const searchBar = document.getElementById('searchBar');
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    const navLinks = document.querySelector('.nav-links');
-    
-    // Overlay elements
-    const gameOverlay = document.getElementById('gameOverlay');
-    const gameIframe = document.getElementById('gameIframe');
-    const iframeContainer = document.getElementById('gameIframeContainer');
-    const overlayGameTitle = document.getElementById('overlayGameTitle');
-    const closeOverlayBtn = document.getElementById('closeOverlayBtn');
-    const gameLoading = document.getElementById('gameLoading');
-    const gameError = document.getElementById('gameError');
-    const retryBtn = document.getElementById('retryBtn');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const downloadGameBtn = document.getElementById('downloadGameBtn');
+// DOM Elements
+const gamesGrid = document.getElementById('gamesGrid');
+const favoritesContainer = document.getElementById('favoritesContainer');
+const gameCount = document.getElementById('gameCount');
+const searchBar = document.getElementById('searchBar');
+const filterButtons = document.querySelectorAll('.filter-btn');
+const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+const navLinks = document.querySelector('.nav-links');
 
-    // State
-    let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    let currentFilter = 'all';
-    let searchQuery = '';
-    let currentGame = null;
-    let currentGameUrl = '';
-    let currentPage = 1;
-    const GAMES_PER_PAGE = 100;
-    let filteredGames = [];
+// Overlay elements
+const gameOverlay = document.getElementById('gameOverlay');
+const gameIframe = document.getElementById('gameIframe');
+const iframeContainer = document.getElementById('gameIframeContainer');
+const overlayGameTitle = document.getElementById('overlayGameTitle');
+const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+const gameLoading = document.getElementById('gameLoading');
+const gameError = document.getElementById('gameError');
+const retryBtn = document.getElementById('retryBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const downloadGameBtn = document.getElementById('downloadGameBtn');
 
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', () => {
-      // Translate URLs for all games
-      translateAllGameUrls();
-      
-      // Sort games alphabetically
-      sortGamesAlphabetically();
-      
-      // Render everything
-      filterAndSortGames();
-      renderGames();
-      updateGameCount();
-      renderFavorites();
-      setupEventListeners();
-      updateGreeting();
-      createHearts();
-      setupPagination();
-  setupBeforeUnloadWarning(); // <-- ADD THIS LINE
+// State
+let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+let currentFilter = 'all';
+let searchQuery = '';
+let currentGame = null;
+let currentGameUrl = '';
+let currentPage = 1;
+const GAMES_PER_PAGE = 100;
+let filteredGames = [];
+let errorTimeout = null;
+let lastError = null;
 
-    });
+// Initialize the page
+document.addEventListener('DOMContentLoaded', () => {
+  // Translate URLs for all games
+  translateAllGameUrls();
+  
+  // Sort games alphabetically
+  sortGamesAlphabetically();
+  
+  // Render everything
+  filterAndSortGames();
+  renderGames();
+  updateGameCount();
+  renderFavorites();
+  setupEventListeners();
+  updateGreeting();
+  createHearts();
+  setupPagination();
+  setupBeforeUnloadWarning();
+});
+
 function openSiteInNewTab() {
   // Open a new blank tab
   const newTab = window.open('about:blank', '_blank');
@@ -5753,314 +5754,363 @@ ${document.documentElement.outerHTML}
   newTab.document.close();
 }
 
-    // Translate all game URLs on load
-    function translateAllGameUrls() {
-      games.forEach(game => {
-        // Translate image URL
-        game.translatedImage = translateImageUrl(game.image);
-        
-        // Translate game URL
-        game.translatedUrl = translateGameUrl(game.url);
-      });
-    }
+// Translate all game URLs on load
+function translateAllGameUrls() {
+  games.forEach(game => {
+    // Translate image URL
+    game.translatedImage = translateImageUrl(game.image);
+    
+    // Translate game URL
+    game.translatedUrl = translateGameUrl(game.url);
+  });
+}
 
-    // Sort games alphabetically
-    function sortGamesAlphabetically() {
-      games.sort((a, b) => a.title.localeCompare(b.title));
-    }
+// Sort games alphabetically
+function sortGamesAlphabetically() {
+  games.sort((a, b) => a.title.localeCompare(b.title));
+}
 
-    // Filter and sort games based on current filter and search
-    function filterAndSortGames() {
-      filteredGames = games.filter(game => {
-        const matchesFilter = currentFilter === 'all' || 
-                             (currentFilter === 'new' && game.isNew);
-        
-        const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        return matchesFilter && matchesSearch;
-      });
-      
-      // Reset to page 1 when filtering
-      currentPage = 1;
-    }
+// Filter and sort games based on current filter and search
+function filterAndSortGames() {
+  filteredGames = games.filter(game => {
+    const matchesFilter = currentFilter === 'all' || 
+                         (currentFilter === 'new' && game.isNew);
+    
+    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
+  
+  // Reset to page 1 when filtering
+  currentPage = 1;
+}
 
-    // Get games for current page
-    function getGamesForCurrentPage() {
-      const startIndex = (currentPage - 1) * GAMES_PER_PAGE;
-      const endIndex = startIndex + GAMES_PER_PAGE;
-      return filteredGames.slice(startIndex, endIndex);
-    }
+// Get games for current page
+function getGamesForCurrentPage() {
+  const startIndex = (currentPage - 1) * GAMES_PER_PAGE;
+  const endIndex = startIndex + GAMES_PER_PAGE;
+  return filteredGames.slice(startIndex, endIndex);
+}
 
-    // Get total pages
-    function getTotalPages() {
-      return Math.ceil(filteredGames.length / GAMES_PER_PAGE);
-    }
+// Get total pages
+function getTotalPages() {
+  return Math.ceil(filteredGames.length / GAMES_PER_PAGE);
+}
 
-    // Setup pagination controls
-    function setupPagination() {
-      const paginationContainer = document.createElement('div');
-      paginationContainer.className = 'pagination';
-      paginationContainer.style.cssText = `
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        margin: 2rem 0;
-        flex-wrap: wrap;
-      `;
-      
-      gamesGrid.parentNode.appendChild(paginationContainer);
-      
-      // Create pagination elements
-      const prevBtn = document.createElement('button');
-      prevBtn.className = 'filter-btn';
-      prevBtn.innerHTML = '← Previous';
-      prevBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderGames();
-          updatePagination();
-        }
-      });
-      
-      const nextBtn = document.createElement('button');
-      nextBtn.className = 'filter-btn';
-      nextBtn.innerHTML = 'Next →';
-      nextBtn.addEventListener('click', () => {
-        if (currentPage < getTotalPages()) {
-          currentPage++;
-          renderGames();
-          updatePagination();
-        }
-      });
-      
-      const pageInfo = document.createElement('span');
-      pageInfo.className = 'page-info';
-      pageInfo.style.cssText = `
-        color: var(--valentine-pink);
-        font-weight: 500;
-        min-width: 150px;
-        text-align: center;
-      `;
-      
-      paginationContainer.appendChild(prevBtn);
-      paginationContainer.appendChild(pageInfo);
-      paginationContainer.appendChild(nextBtn);
-      
-      // Store references for updates
-      window.paginationElements = {
-        container: paginationContainer,
-        prevBtn,
-        nextBtn,
-        pageInfo
-      };
-      
+// Setup pagination controls
+function setupPagination() {
+  const paginationContainer = document.createElement('div');
+  paginationContainer.className = 'pagination';
+  paginationContainer.style.cssText = `
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+  `;
+  
+  gamesGrid.parentNode.appendChild(paginationContainer);
+  
+  // Create pagination elements
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'filter-btn';
+  prevBtn.innerHTML = '← Previous';
+  prevBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderGames();
       updatePagination();
     }
-
-    // Update pagination display
-    function updatePagination() {
-      if (!window.paginationElements) return;
-      
-      const { prevBtn, nextBtn, pageInfo } = window.paginationElements;
-      const totalPages = getTotalPages();
-      
-      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-      prevBtn.disabled = currentPage === 1;
-      nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-      
-      prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
-      nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+  });
+  
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'filter-btn';
+  nextBtn.innerHTML = 'Next →';
+  nextBtn.addEventListener('click', () => {
+    if (currentPage < getTotalPages()) {
+      currentPage++;
+      renderGames();
+      updatePagination();
     }
+  });
+  
+  const pageInfo = document.createElement('span');
+  pageInfo.className = 'page-info';
+  pageInfo.style.cssText = `
+    color: var(--valentine-pink);
+    font-weight: 500;
+    min-width: 150px;
+    text-align: center;
+  `;
+  
+  paginationContainer.appendChild(prevBtn);
+  paginationContainer.appendChild(pageInfo);
+  paginationContainer.appendChild(nextBtn);
+  
+  // Store references for updates
+  window.paginationElements = {
+    container: paginationContainer,
+    prevBtn,
+    nextBtn,
+    pageInfo
+  };
+  
+  updatePagination();
+}
 
-    // Render games based on current page
-    function renderGames() {
-      gamesGrid.innerHTML = '';
-      
-      const pageGames = getGamesForCurrentPage();
-      
-      if (pageGames.length === 0) {
-        gamesGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
-            <p>No games found matching your search. 💔</p>
-            <p style="margin-top: 1rem;">Try a different search or check the next page!</p>
-          </div>
-        `;
+// Update pagination display
+function updatePagination() {
+  if (!window.paginationElements) return;
+  
+  const { prevBtn, nextBtn, pageInfo } = window.paginationElements;
+  const totalPages = getTotalPages();
+  
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+  
+  prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+  nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+}
+
+// Render games based on current page
+function renderGames() {
+  gamesGrid.innerHTML = '';
+  
+  const pageGames = getGamesForCurrentPage();
+  
+  if (pageGames.length === 0) {
+    gamesGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+        <p>No games found matching your search. 💔</p>
+        <p style="margin-top: 1rem;">Try a different search or check the next page!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  pageGames.forEach(game => {
+    const gameCard = document.createElement('div');
+    gameCard.className = `game-card ${game.isNew ? 'new' : ''}`;
+    gameCard.setAttribute('data-game-id', game.id);
+    gameCard.innerHTML = `
+      <img src="${game.translatedImage || game.image}" alt="${game.title}" class="game-image" loading="lazy" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/gh/waycrosspublicmedia/whatver@main/wip.jpg';">
+      <div class="game-info">
+        <div class="game-title" data-game-id="${game.id}">${game.title}</div>
+        <div class="game-actions">
+          <button class="favorite-btn ${favorites.includes(game.id) ? 'favorited' : ''}" data-id="${game.id}">
+            ${favorites.includes(game.id) ? '❤️' : '🤍'}
+          </button>
+        </div>
+      </div>
+    `;
+    gamesGrid.appendChild(gameCard);
+  });
+  
+  updatePagination();
+}
+
+// Update game count display
+function updateGameCount() {
+  const totalFilteredGames = filteredGames.length;
+  const totalGames = games.length;
+  const newGames = games.filter(game => game.isNew).length;
+  
+  let countText = `Total Stuff: ${totalGames} 💖`;
+  
+  if (currentFilter === 'new') {
+    countText = `New Stuff: ${newGames} 💝`;
+  } else if (searchQuery) {
+    countText = `Found: ${totalFilteredGames} games 💖`;
+  }
+  
+  if (totalFilteredGames > GAMES_PER_PAGE) {
+    const totalPages = getTotalPages();
+    countText += ` (Page ${currentPage} of ${totalPages})`;
+  }
+  
+  gameCount.textContent = countText;
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Filter buttons
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      currentFilter = button.dataset.filter;
+      filterAndSortGames();
+      renderGames();
+      updateGameCount();
+    });
+  });
+  
+  // Search functionality
+  searchBar.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    filterAndSortGames();
+    renderGames();
+    updateGameCount();
+  });
+  
+  // Mobile menu
+  mobileMenuBtn.addEventListener('click', () => {
+    navLinks.classList.toggle('active');
+  });
+  
+  // Favorite buttons (delegated event listener)
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('favorite-btn')) {
+      toggleFavorite(parseInt(e.target.dataset.id));
+    }
+    
+    // Game card click (either the card itself or the title)
+    const gameCard = e.target.closest('.game-card');
+    const gameTitle = e.target.closest('.game-title');
+    
+    if (gameCard || gameTitle) {
+      const gameId = (gameCard || gameTitle).getAttribute('data-game-id');
+      if (gameId) {
+        openGame(parseInt(gameId));
+      }
+    }
+  });
+  
+  // Overlay buttons
+  closeOverlayBtn.addEventListener('click', closeGameOverlay);
+  retryBtn.addEventListener('click', retryGameLoad);
+  downloadGameBtn.addEventListener('click', downloadGame);
+  
+  // Fullscreen button
+  fullscreenBtn.addEventListener('click', () => {
+    toggleFullscreen(iframeContainer);
+  });
+  
+  // Close overlay with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (gameOverlay.classList.contains('active')) {
+        closeGameOverlay();
+        e.preventDefault();
+      } else {
+        // Panic button functionality
+        window.location.href = 'https://www.google.com';
+      }
+    }
+  });
+  
+  // Handle fullscreen change events
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+  
+  // Iframe load events
+  gameIframe.addEventListener('load', handleIframeLoad);
+  gameIframe.addEventListener('error', handleIframeError);
+}
+
+// Handle iframe load - FIXED: Delayed error checking
+function handleIframeLoad() {
+  // Clear any existing error timeout
+  if (errorTimeout) {
+    clearTimeout(errorTimeout);
+    errorTimeout = null;
+  }
+  
+  // Show loading for at least 2 seconds to prevent flickering
+  setTimeout(() => {
+    hideLoading();
+    
+    // Check if the iframe loaded actual content
+    setTimeout(() => {
+      try {
+        const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
+        const bodyContent = iframeDoc.body?.innerText || '';
+        
+        // Check for common error messages
+        if (bodyContent.includes('404') || 
+            bodyContent.includes('Not Found') || 
+            bodyContent.includes('Error') ||
+            bodyContent.includes('Page not found') ||
+            (bodyContent.length < 100 && !bodyContent.includes('game'))) { // Very little content = probably an error page
+          
+          // Store error info
+          lastError = {
+            type: 'Content Error',
+            message: 'Loaded page appears to be an error page',
+            details: `Content length: ${bodyContent.length} chars`,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Show error after delay
+          setTimeout(() => {
+            showError('Game loaded but appears to be an error page. Trying alternative methods...');
+          }, 500);
+        }
+      } catch (e) {
+        // Cross-origin error is expected, ignore
+        console.log('Cross-origin check completed');
+      }
+    }, 1000);
+  }, 2000);
+}
+
+// Handle iframe error - FIXED: Delayed error display
+function handleIframeError() {
+  // Clear any existing timeout
+  if (errorTimeout) {
+    clearTimeout(errorTimeout);
+  }
+  
+  // Set a timeout to show error only after 3 seconds
+  errorTimeout = setTimeout(() => {
+    // Check if iframe is actually loaded
+    try {
+      if (gameIframe.contentWindow.location.href !== 'about:blank') {
+        // Iframe has loaded something, don't show error
+        hideLoading();
         return;
       }
-      
-      pageGames.forEach(game => {
-        const gameCard = document.createElement('div');
-        gameCard.className = `game-card ${game.isNew ? 'new' : ''}`;
-        gameCard.setAttribute('data-game-id', game.id);
-        gameCard.innerHTML = `
-          <img src="${game.translatedImage || game.image}" alt="${game.title}" class="game-image" loading="lazy" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/gh/waycrosspublicmedia/whatver@main/wip.jpg';">
-          <div class="game-info">
-            <div class="game-title" data-game-id="${game.id}">${game.title}</div>
-            <div class="game-actions">
-              <button class="favorite-btn ${favorites.includes(game.id) ? 'favorited' : ''}" data-id="${game.id}">
-                ${favorites.includes(game.id) ? '❤️' : '🤍'}
-              </button>
-            </div>
-          </div>
-        `;
-        gamesGrid.appendChild(gameCard);
-      });
-      
-      updatePagination();
+    } catch (e) {
+      // Cross-origin error, continue with error display
     }
+    
+    // Store error info
+    lastError = {
+      type: 'Iframe Error',
+      message: 'Iframe failed to load content',
+      details: 'Network error or CORS issue',
+      timestamp: new Date().toISOString()
+    };
+    
+    showError('Game is taking longer than expected to load...<br>Still trying in background!');
+  }, 3000);
+}
 
-    // Update game count display
-    function updateGameCount() {
-      const totalFilteredGames = filteredGames.length;
-      const totalGames = games.length;
-      const newGames = games.filter(game => game.isNew).length;
-      
-      let countText = `Total Stuff: ${totalGames} 💖`;
-      
-      if (currentFilter === 'new') {
-        countText = `New Stuff: ${newGames} 💝`;
-      } else if (searchQuery) {
-        countText = `Found: ${totalFilteredGames} games 💖`;
-      }
-      
-      if (totalFilteredGames > GAMES_PER_PAGE) {
-        const totalPages = getTotalPages();
-        countText += ` (Page ${currentPage} of ${totalPages})`;
-      }
-      
-      gameCount.textContent = countText;
-    }
+// Handle fullscreen changes
+function handleFullscreenChange() {
+  const isFullscreen = document.fullscreenElement || 
+                      document.webkitFullscreenElement || 
+                      document.mozFullScreenElement || 
+                      document.msFullscreenElement;
+  
+  const btnText = fullscreenBtn.querySelector('.btn-text');
+  const btnIcon = fullscreenBtn.querySelector('.btn-icon');
+  
+  if (isFullscreen) {
+    btnText.textContent = 'Exit Fullscreen';
+    btnIcon.textContent = '🔳';
+  } else {
+    btnText.textContent = 'Fullscreen';
+    btnIcon.textContent = '🔲';
+  }
+}
 
-    // Setup event listeners
-    function setupEventListeners() {
-
-      // Filter buttons
-      filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          filterButtons.forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-          currentFilter = button.dataset.filter;
-          filterAndSortGames();
-          renderGames();
-          updateGameCount();
-        });
-      });
-      
-      // Search functionality
-      searchBar.addEventListener('input', (e) => {
-        searchQuery = e.target.value;
-        filterAndSortGames();
-        renderGames();
-        updateGameCount();
-      });
-      
-      // Mobile menu
-      mobileMenuBtn.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
-      });
-      
-      // Favorite buttons (delegated event listener)
-      document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('favorite-btn')) {
-          toggleFavorite(parseInt(e.target.dataset.id));
-        }
-        
-        // Game card click (either the card itself or the title)
-        const gameCard = e.target.closest('.game-card');
-        const gameTitle = e.target.closest('.game-title');
-        
-        if (gameCard || gameTitle) {
-          const gameId = (gameCard || gameTitle).getAttribute('data-game-id');
-          if (gameId) {
-            openGame(parseInt(gameId));
-          }
-        }
-      });
-      
-      // Overlay buttons
-      closeOverlayBtn.addEventListener('click', closeGameOverlay);
-      retryBtn.addEventListener('click', retryGameLoad);
-      downloadGameBtn.addEventListener('click', downloadGame);
-      
-      // Fullscreen button
-      fullscreenBtn.addEventListener('click', () => {
-        toggleFullscreen(iframeContainer);
-      });
-      
-      // Close overlay with Escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          if (gameOverlay.classList.contains('active')) {
-            closeGameOverlay();
-            e.preventDefault();
-          } else {
-            // Panic button functionality
-            window.location.href = 'https://www.google.com';
-          }
-        }
-      });
-      
-      // Handle fullscreen change events
-      document.addEventListener('fullscreenchange', handleFullscreenChange);
-      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-      
-      // Iframe load events
-      gameIframe.addEventListener('load', handleIframeLoad);
-      gameIframe.addEventListener('error', handleIframeError);
-    }
-
-    // Handle iframe load
-    function handleIframeLoad() {
-      hideLoading();
-      
-      // Check if the iframe loaded actual content or just an error
-      setTimeout(() => {
-        try {
-          const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
-          const bodyContent = iframeDoc.body?.innerText || '';
-          
-          // Check for common error messages
-          if (bodyContent.includes('404') || 
-              bodyContent.includes('Not Found') || 
-              bodyContent.includes('Error') ||
-              bodyContent.length < 50) { // Very little content = probably an error page
-            showError('Oops! This game might be taking a nap 😴<br>Try again or pick another game!');
-          }
-        } catch (e) {
-          // Cross-origin error is expected, ignore
-        }
-      }, 500);
-    }
-
-    // Handle iframe error
-    function handleIframeError() {
-      hideLoading();
-      showError('Whoopsie! The game took a wrong turn 🚧<br>Try clicking "Retry" or choose another game!');
-    }
-
-    // Handle fullscreen changes
-    function handleFullscreenChange() {
-      const isFullscreen = document.fullscreenElement || 
-                          document.webkitFullscreenElement || 
-                          document.mozFullScreenElement || 
-                          document.msFullscreenElement;
-      
-      const btnText = fullscreenBtn.querySelector('.btn-text');
-      const btnIcon = fullscreenBtn.querySelector('.btn-icon');
-      
-      if (isFullscreen) {
-        btnText.textContent = 'Exit Fullscreen';
-        btnIcon.textContent = '🔳';
-      } else {
-        btnText.textContent = 'Fullscreen';
-        btnIcon.textContent = '🔲';
-      }
-    }
 function setupBeforeUnloadWarning() {
-let gameIsOpen = false;
+  let gameIsOpen = false;
   
   // Listen for overlay open/close
   const observer = new MutationObserver((mutations) => {
@@ -6075,294 +6125,385 @@ let gameIsOpen = false;
   
   // Add the beforeunload event listener
   window.addEventListener('beforeunload', (e) => {
-
+    if (gameIsOpen) {
       // Modern browsers require both of these
       e.preventDefault();
       e.returnValue = ''; // An empty string is required
       
       // Return any string (though modern browsers ignore it)
       return '';
-    
+    }
   });
 }
-    // Toggle fullscreen
-    function toggleFullscreen(element) {
-      if (!document.fullscreenElement) {
-        if (element.requestFullscreen) {
-          element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) {
-          element.webkitRequestFullscreen();
-        } else if (element.mozRequestFullScreen) {
-          element.mozRequestFullScreen();
-        } else if (element.msRequestFullscreen) {
-          element.msRequestfullscreen();
+
+// Toggle fullscreen
+function toggleFullscreen(element) {
+  if (!document.fullscreenElement) {
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+      element.msRequestfullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+}
+
+// Function to load game using Blob URL trick
+async function loadGameInIframe(gameUrl, gameTitle) {
+  try {
+    // Reset error state
+    hideError();
+    showLoading();
+    
+    // Clear any existing timeout
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+      errorTimeout = null;
+    }
+    
+    // Store the URL for retry
+    currentGameUrl = gameUrl;
+    
+    // Clear previous iframe content
+    gameIframe.src = 'about:blank';
+    
+    // Set a timeout for the fetch (increased to 20 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    
+    try {
+      // Fetch the HTML content
+      const response = await fetch(gameUrl, { 
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'text/html'
         }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    }
-
-    // Function to load game using Blob URL trick
-    async function loadGameInIframe(gameUrl, gameTitle) {
-      try {
-        // Reset error state
-        hideError();
-        showLoading();
-        
-        // Store the URL for retry
-        currentGameUrl = gameUrl;
-        
-        // Clear previous iframe content
-        gameIframe.src = 'about:blank';
-        
-        // Set a timeout for the fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-        try {
-          // Fetch the HTML content
-          const response = await fetch(gameUrl, { 
-            signal: controller.signal,
-            mode: 'cors',
-            credentials: 'omit',
-            headers: {
-              'Accept': 'text/html'
-            }
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const htmlContent = await response.text();
-          
-          // Check if it's valid HTML
-          if (!htmlContent.includes('<html') && !htmlContent.includes('<!DOCTYPE')) {
-            throw new Error('Response is not valid HTML');
-          }
-          
-          // Create a blob with the HTML content
-          const blob = new Blob([htmlContent], { type: 'text/html' });
-          
-          // Create a blob URL
-          const blobUrl = URL.createObjectURL(blob);
-          
-          // Set iframe src to blob URL - this will execute the HTML properly!
-          gameIframe.src = blobUrl;
-          
-          // Store for cleanup
-          currentGameBlobUrl = blobUrl;
-          
-          // Clean up old blob URL if exists
-          if (window.previousBlobUrl) {
-            URL.revokeObjectURL(window.previousBlobUrl);
-          }
-          window.previousBlobUrl = blobUrl;
-          
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          
-          // Fallback: use a different approach - create a minimal HTML page that redirects
-          const redirectHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="UTF-8">
-                <title>Loading Game...</title>
-                <style>
-                  body { 
-                    margin: 0; 
-                    padding: 0; 
-                    background: #000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100vh;
-                    color: white;
-                    font-family: Arial, sans-serif;
-                  }
-                </style>
-                <script>
-                  // Redirect after a short delay
-                  setTimeout(() => {
-                    window.location.href = "${gameUrl}";
-                  }, 100);
-                <\/script>
-              </head>
-              <body>
-                Loading game... ⏳
-              </body>
-            </html>
-          `;
-          
-          const fallbackBlob = new Blob([redirectHtml], { type: 'text/html' });
-          const fallbackUrl = URL.createObjectURL(fallbackBlob);
-          gameIframe.src = fallbackUrl;
-          
-          if (window.previousBlobUrl) {
-            URL.revokeObjectURL(window.previousBlobUrl);
-          }
-          window.previousBlobUrl = fallbackUrl;
-        }
-        
-        return true;
-        
-      } catch (error) {
-        // Ultimate fallback: try to create a proxy page
-        hideLoading();
-        
-        const proxyHtml = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8">
-              <title>${gameTitle}</title>
-              <style>
-                html, body { 
-                  margin: 0; 
-                  padding: 0; 
-                  width: 100%;
-                  height: 100%;
-                  overflow: hidden;
-                  background: #000;
-                }
-                iframe {
-                  width: 100%;
-                  height: 100%;
-                  border: none;
-                }
-              </style>
-            </head>
-            <body>
-              <iframe src="${gameUrl}" allowfullscreen></iframe>
-            </body>
-          </html>
-        `;
-        
-        const proxyBlob = new Blob([proxyHtml], { type: 'text/html' });
-        const proxyUrl = URL.createObjectURL(proxyBlob);
-        gameIframe.src = proxyUrl;
-        
-        if (window.previousBlobUrl) {
-          URL.revokeObjectURL(window.previousBlobUrl);
-        }
-        window.previousBlobUrl = proxyUrl;
-        
-        return false;
+      
+      const htmlContent = await response.text();
+      
+      // Check if it's valid HTML
+      if (!htmlContent.includes('<html') && !htmlContent.includes('<!DOCTYPE')) {
+        throw new Error('Response is not valid HTML');
       }
-    }
-
-    // Show/hide loading/error states
-    function showLoading() {
-      gameLoading.classList.add('active');
-      gameLoading.innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 1rem;">🎮💖</div>
-          <div>Getting your game ready...</div>
-          <small>This might take a moment! ⏳</small>
-        </div>
-      `;
-    }
-
-    function hideLoading() {
-      gameLoading.classList.remove('active');
-    }
-
-    function showError(message) {
-      gameError.querySelector('div').innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 1rem;">😔💔</div>
-          ${message}
-        </div>
-      `;
-      gameError.classList.add('active');
-    }
-
-    function hideError() {
-      gameError.classList.remove('active');
-    }
-
-    // Retry loading the game
-    function retryGameLoad() {
-      if (currentGame && currentGameUrl) {
-        hideError();
-        showLoading();
-        gameIframe.src = currentGameUrl;
-      }
-    }
-
-    // Open game in overlay
-    function openGame(gameId) {
-      const game = games.find(g => g.id === gameId);
-      if (!game) return;
       
-      currentGame = game;
-      overlayGameTitle.textContent = `Playing: ${game.title} 🎮`;
+      // Create a blob with the HTML content
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       
-      // Show overlay
-      gameOverlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
+      // Create a blob URL
+      const blobUrl = URL.createObjectURL(blob);
       
-      // Load the game
-      const gameUrl = game.translatedUrl || game.url;
+      // Set iframe src to blob URL - this will execute the HTML properly!
+      gameIframe.src = blobUrl;
       
-      loadGameInIframe(gameUrl, game.title);
-    }
-
-    // Close game overlay with proper cleanup
-    function closeGameOverlay() {
-      // Hide overlay
-      gameOverlay.classList.remove('active');
+      // Store for cleanup
+      currentGameBlobUrl = blobUrl;
       
-      // Reset states
-      hideLoading();
-      hideError();
-      
-      // Clear iframe content safely
-      gameIframe.src = 'about:blank';
-      
-      // Clean up blob URLs
+      // Clean up old blob URL if exists
       if (window.previousBlobUrl) {
         URL.revokeObjectURL(window.previousBlobUrl);
-        window.previousBlobUrl = null;
       }
+      window.previousBlobUrl = blobUrl;
       
-      // Reset current game
-      currentGame = null;
-      currentGameUrl = '';
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
       
-      // Restore body scroll
-      document.body.style.overflow = '';
+      // Store error info
+      lastError = {
+        type: 'Fetch Error',
+        message: fetchError.message,
+        details: `Failed to fetch from: ${gameUrl}`,
+        timestamp: new Date().toISOString()
+      };
       
-      // Exit fullscreen if active
-      if (document.fullscreenElement || 
-          document.webkitFullscreenElement || 
-          document.mozFullScreenElement || 
-          document.msFullscreenElement) {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
+      // Fallback: use a different approach - create a minimal HTML page that redirects
+      const redirectHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Loading Game...</title>
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                background: #000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                color: white;
+                font-family: Arial, sans-serif;
+              }
+            </style>
+            <script>
+              // Redirect after a short delay
+              setTimeout(() => {
+                window.location.href = "${gameUrl}";
+              }, 100);
+            <\/script>
+          </head>
+          <body>
+            Loading game... ⏳
+          </body>
+        </html>
+      `;
+      
+      const fallbackBlob = new Blob([redirectHtml], { type: 'text/html' });
+      const fallbackUrl = URL.createObjectURL(fallbackBlob);
+      gameIframe.src = fallbackUrl;
+      
+      if (window.previousBlobUrl) {
+        URL.revokeObjectURL(window.previousBlobUrl);
       }
+      window.previousBlobUrl = fallbackUrl;
     }
+    
+    return true;
+    
+  } catch (error) {
+    // Store error info
+    lastError = {
+      type: 'Load Error',
+      message: error.message,
+      details: `Game: ${gameTitle}, URL: ${gameUrl}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Ultimate fallback: try to create a proxy page
+    hideLoading();
+    
+    const proxyHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${gameTitle}</title>
+          <style>
+            html, body { 
+              margin: 0; 
+              padding: 0; 
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #000;
+            }
+            iframe {
+              width: 100%;
+              height: 100%;
+              border: none;
+            }
+          </style>
+        </head>
+        <body>
+          <iframe src="${gameUrl}" allowfullscreen></iframe>
+        </body>
+      </html>
+    `;
+    
+    const proxyBlob = new Blob([proxyHtml], { type: 'text/html' });
+    const proxyUrl = URL.createObjectURL(proxyBlob);
+    gameIframe.src = proxyUrl;
+    
+    if (window.previousBlobUrl) {
+      URL.revokeObjectURL(window.previousBlobUrl);
+    }
+    window.previousBlobUrl = proxyUrl;
+    
+    return false;
+  }
+}
 
-    // Download game as HTML file
-    function downloadGame() {
+// Show/hide loading/error states - FIXED: Better error handling
+function showLoading() {
+  gameLoading.classList.add('active');
+  gameLoading.innerHTML = `
+    <div style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">🎮💖</div>
+      <div>Getting your game ready...</div>
+      <small>This might take a moment! ⏳</small>
+      <div style="margin-top: 1rem; font-size: 0.8rem; color: #ff66b2;">
+        If it takes too long, try the Retry button!
+      </div>
+    </div>
+  `;
+}
+
+function hideLoading() {
+  gameLoading.classList.remove('active');
+}
+
+function showError(message) {
+  // Create advanced view dropdown
+  const advancedView = lastError ? `
+    <div style="margin-top: 1rem; text-align: left;">
+      <details style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; cursor: pointer;">
+        <summary style="font-weight: bold; color: #ff66b2;">⚙️ Advanced Error Details</summary>
+        <div style="margin-top: 10px; font-family: monospace; font-size: 0.8rem; overflow-x: auto;">
+          <div><strong>Error Type:</strong> ${lastError.type}</div>
+          <div><strong>Message:</strong> ${lastError.message}</div>
+          <div><strong>Details:</strong> ${lastError.details}</div>
+          <div><strong>Time:</strong> ${new Date(lastError.timestamp).toLocaleTimeString()}</div>
+          <div><strong>Game URL:</strong> <span style="word-break: break-all;">${currentGameUrl}</span></div>
+        </div>
+      </details>
+      <button id="copyErrorBtn" style="margin-top: 10px; padding: 5px 10px; background: #ff66b2; color: white; border: none; border-radius: 3px; cursor: pointer;">
+        📋 Copy Error Details
+      </button>
+    </div>
+  ` : '';
+  
+  gameError.querySelector('div').innerHTML = `
+    <div style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">🎮⏳</div>
+      ${message}
+      ${advancedView}
+      <div style="margin-top: 1rem; font-size: 0.9rem; color: #ffcc00;">
+        The game might still load in the background! Check below...
+      </div>
+    </div>
+  `;
+  
+  gameError.classList.add('active');
+  
+  // Add copy error button functionality
+  const copyErrorBtn = document.getElementById('copyErrorBtn');
+  if (copyErrorBtn && lastError) {
+    copyErrorBtn.addEventListener('click', () => {
+      const errorText = `Diesmos Game Error Report:
+Type: ${lastError.type}
+Message: ${lastError.message}
+Details: ${lastError.details}
+Game URL: ${currentGameUrl}
+Time: ${new Date(lastError.timestamp).toLocaleString()}`;
+      
+      navigator.clipboard.writeText(errorText).then(() => {
+        const originalText = copyErrorBtn.textContent;
+        copyErrorBtn.textContent = '✅ Copied!';
+        setTimeout(() => {
+          copyErrorBtn.textContent = originalText;
+        }, 2000);
+      });
+    });
+  }
+  
+  // Auto-hide error after 5 seconds if game seems to be loading
+  setTimeout(() => {
+    try {
+      if (gameIframe.contentWindow && gameIframe.contentWindow.location.href !== 'about:blank') {
+        hideError();
+      }
+    } catch (e) {
+      // Ignore cross-origin errors
+    }
+  }, 5000);
+}
+
+function hideError() {
+  gameError.classList.remove('active');
+  if (errorTimeout) {
+    clearTimeout(errorTimeout);
+    errorTimeout = null;
+  }
+}
+
+// Retry loading the game
+function retryGameLoad() {
+  if (currentGame && currentGameUrl) {
+    hideError();
+    showLoading();
+    
+    // Add a small delay before retrying
+    setTimeout(() => {
+      gameIframe.src = currentGameUrl;
+    }, 500);
+  }
+}
+
+// Open game in overlay
+function openGame(gameId) {
+  const game = games.find(g => g.id === gameId);
+  if (!game) return;
+  
+  currentGame = game;
+  overlayGameTitle.textContent = `Playing: ${game.title} 🎮`;
+  
+  // Show overlay
+  gameOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  
+  // Load the game
+  const gameUrl = game.translatedUrl || game.url;
+  
+  loadGameInIframe(gameUrl, game.title);
+}
+
+// Close game overlay with proper cleanup
+function closeGameOverlay() {
+  // Hide overlay
+  gameOverlay.classList.remove('active');
+  
+  // Reset states
+  hideLoading();
+  hideError();
+  
+  // Clear iframe content safely
+  gameIframe.src = 'about:blank';
+  
+  // Clean up blob URLs
+  if (window.previousBlobUrl) {
+    URL.revokeObjectURL(window.previousBlobUrl);
+    window.previousBlobUrl = null;
+  }
+  
+  // Reset current game
+  currentGame = null;
+  currentGameUrl = '';
+  lastError = null;
+  
+  // Restore body scroll
+  document.body.style.overflow = '';
+  
+  // Exit fullscreen if active
+  if (document.fullscreenElement || 
+      document.webkitFullscreenElement || 
+      document.mozFullScreenElement || 
+      document.msFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+}
+
+// Download game as HTML file
+function downloadGame() {
   if (!currentGame) {
     alert('No game loaded to download! 💔');
     return;
@@ -6528,87 +6669,87 @@ let gameIsOpen = false;
   }
 }
 
-    // Toggle favorite status
-    function toggleFavorite(gameId) {
-      const index = favorites.indexOf(gameId);
-      
-      if (index === -1) {
-        favorites.push(gameId);
-      } else {
-        favorites.splice(index, 1);
-      }
-      
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      renderFavorites();
-      renderGames(); // Re-render to update heart icons
-    }
+// Toggle favorite status
+function toggleFavorite(gameId) {
+  const index = favorites.indexOf(gameId);
+  
+  if (index === -1) {
+    favorites.push(gameId);
+  } else {
+    favorites.splice(index, 1);
+  }
+  
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+  renderFavorites();
+  renderGames(); // Re-render to update heart icons
+}
 
-    // Render favorites section
-    function renderFavorites() {
-      const favoritesGrid = document.getElementById('favoritesContainer');
-      
-      if (favorites.length === 0) {
-        favoritesGrid.innerHTML = `
-          <div class="empty-favorites">
-            <p>You haven't added any favorites yet. 💔</p>
-            <p>Click the ❤️ icon on games to add them here. 💝</p>
-          </div>
-        `;
-        return;
-      }
-      
-      favoritesGrid.innerHTML = '';
-      
-      const favoriteGames = games.filter(game => favorites.includes(game.id));
-      
-      favoriteGames.forEach(game => {
-        const gameCard = document.createElement('div');
-        gameCard.className = `game-card ${game.isNew ? 'new' : ''}`;
-        gameCard.setAttribute('data-game-id', game.id);
-        gameCard.innerHTML = `
-          <img src="${game.translatedImage || game.image}" alt="${game.title}" class="game-image" loading="lazy" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/gh/waycrosspublicmedia/images@main/wip.jpg';">
-          <div class="game-info">
-            <div class="game-title" data-game-id="${game.id}">${game.title}</div>
-            <div class="game-actions">
-              <button class="favorite-btn favorited" data-id="${game.id}">❤️</button>
-            </div>
-          </div>
-        `;
-        favoritesGrid.appendChild(gameCard);
-      });
-    }
+// Render favorites section
+function renderFavorites() {
+  const favoritesGrid = document.getElementById('favoritesContainer');
+  
+  if (favorites.length === 0) {
+    favoritesGrid.innerHTML = `
+      <div class="empty-favorites">
+        <p>You haven't added any favorites yet. 💔</p>
+        <p>Click the ❤️ icon on games to add them here. 💝</p>
+      </div>
+    `;
+    return;
+  }
+  
+  favoritesGrid.innerHTML = '';
+  
+  const favoriteGames = games.filter(game => favorites.includes(game.id));
+  
+  favoriteGames.forEach(game => {
+    const gameCard = document.createElement('div');
+    gameCard.className = `game-card ${game.isNew ? 'new' : ''}`;
+    gameCard.setAttribute('data-game-id', game.id);
+    gameCard.innerHTML = `
+      <img src="${game.translatedImage || game.image}" alt="${game.title}" class="game-image" loading="lazy" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/gh/waycrosspublicmedia/images@main/wip.jpg';">
+      <div class="game-info">
+        <div class="game-title" data-game-id="${game.id}">${game.title}</div>
+        <div class="game-actions">
+          <button class="favorite-btn favorited" data-id="${game.id}">❤️</button>
+        </div>
+      </div>
+    `;
+    favoritesGrid.appendChild(gameCard);
+  });
+}
 
-    // Open suggestions form
-    function openSuggestions() {
-      window.open(
-        "https://docs.google.com/forms/d/e/1FAIpQLSfqTJRoaUQJ3YgpZALPIE85umsW12IBXtv6BaI9Y0fdB_XqzQ/viewform?fbzx=492301836448601508&pli=1",
-        "_blank"
-      );
-    }
+// Open suggestions form
+function openSuggestions() {
+  window.open(
+    "https://docs.google.com/forms/d/e/1FAIpQLSfqTJRoaUQJ3YgpZALPIE85umsW12IBXtv6BaI9Y0fdB_XqzQ/viewform?fbzx=492301836448601508&pli=1",
+    "_blank"
+  );
+}
 
-    // Update greeting based on time of day
-    function updateGreeting() {
-      const hour = new Date().getHours();
-      let greeting = 'Have an awesome day! 💖';
-      if (hour < 12) greeting = 'Good morning! ☀️💝';
-      else if (hour < 18) greeting = 'Good afternoon! 🌤️💖';
-      else greeting = 'Good evening! 🌙💝';
-      document.getElementById('greeting').textContent = greeting;
-    }
+// Update greeting based on time of day
+function updateGreeting() {
+  const hour = new Date().getHours();
+  let greeting = 'Have an awesome day! 💖';
+  if (hour < 12) greeting = 'Good morning! ☀️💝';
+  else if (hour < 18) greeting = 'Good afternoon! 🌤️💖';
+  else greeting = 'Good evening! 🌙💝';
+  document.getElementById('greeting').textContent = greeting;
+}
 
-    // Create floating hearts
-    function createHearts() {
-      const heartsContainer = document.getElementById('hearts');
-      const hearts = ['❤️', '💖', '💝', '💘', '💕', '💗', '💓', '💞'];
-      
-      for (let i = 0; i < 15; i++) {
-        const heart = document.createElement('div');
-        heart.className = 'heart';
-        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-        heart.style.left = `${Math.random() * 100}vw`;
-        heart.style.animationDelay = `${Math.random() * 20}s`;
-        heart.style.animationDuration = `${15 + Math.random() * 10}s`;
-        heart.style.fontSize = `${1 + Math.random() * 2}rem`;
-        heartsContainer.appendChild(heart);
-      }
-    }
+// Create floating hearts
+function createHearts() {
+  const heartsContainer = document.getElementById('hearts');
+  const hearts = ['❤️', '💖', '💝', '💘', '💕', '💗', '💓', '💞'];
+  
+  for (let i = 0; i < 15; i++) {
+    const heart = document.createElement('div');
+    heart.className = 'heart';
+    heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+    heart.style.left = `${Math.random() * 100}vw`;
+    heart.style.animationDelay = `${Math.random() * 20}s`;
+    heart.style.animationDuration = `${15 + Math.random() * 10}s`;
+    heart.style.fontSize = `${1 + Math.random() * 2}rem`;
+    heartsContainer.appendChild(heart);
+  }
+}
