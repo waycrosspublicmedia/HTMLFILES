@@ -6237,11 +6237,7 @@ function testGamePlayability() {
     return 'Cross-origin - cannot inspect';
   }
 }
-    // Handle iframe error
-    function handleIframeError() {
-      hideLoading();
-      showError('Whoopsie! The game took a wrong turn 🚧<br>Try clicking "Retry" or choose another game!');
-    }
+  
 
     // Handle fullscreen changes
     function handleFullscreenChange() {
