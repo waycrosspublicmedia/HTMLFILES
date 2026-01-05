@@ -6014,43 +6014,26 @@ ${document.documentElement.outerHTML}
 
     // Handle iframe load
     function handleIframeLoad() {
-  hideLoading();
-
-  // Give the game time to initialize
-  setTimeout(() => {
-    try {
-      const iframeDoc =
-        gameIframe.contentDocument ||
-        gameIframe.contentWindow?.document;
-
-      // If we can't read it, it's cross-origin → assume success
-      if (!iframeDoc || !iframeDoc.body) return;
-
-      const title = iframeDoc.title?.toLowerCase() || '';
-      const text = iframeDoc.body.innerText?.toLowerCase() || '';
-
-      // Only catch REAL error pages
-      const isRealError =
-        title.includes('404') ||
-        title.includes('not found') ||
-        title.includes('error') ||
-        text.startsWith('404') ||
-        text.includes('page not found');
-
-      if (isRealError) {
-        showError(
-          'Oops! This game failed to load 😔<br>' +
-          'Try again or pick another game!'
-        );
-      }
-
-    } catch (err) {
-      // Cross-origin access error = expected & healthy
-      return;
+      hideLoading();
+      
+      // Check if the iframe loaded actual content or just an error
+      setTimeout(() => {
+        try {
+          const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
+          const bodyContent = iframeDoc.body?.innerText || '';
+          
+          // Check for common error messages
+          if (bodyContent.includes('404') || 
+              bodyContent.includes('Not Found') || 
+              bodyContent.includes('Error') ||
+              bodyContent.length < 50) { // Very little content = probably an error page
+            showError('Oops! This game might be taking a nap 😴<br>Try again or pick another game!');
+          }
+        } catch (e) {
+          // Cross-origin error is expected, ignore
+        }
+      }, 500);
     }
-  }, 1000); // longer delay = more reliable
-}
-
 
     // Handle iframe error
     function handleIframeError() {
