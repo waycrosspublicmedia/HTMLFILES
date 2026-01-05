@@ -6013,27 +6013,46 @@ ${document.documentElement.outerHTML}
     }
 
     // Handle iframe load
-    function handleIframeLoad() {
-      hideLoading();
-      
-      // Check if the iframe loaded actual content or just an error
-      setTimeout(() => {
-        try {
-          const iframeDoc = gameIframe.contentDocument || gameIframe.contentWindow.document;
-          const bodyContent = iframeDoc.body?.innerText || '';
-          
-          // Check for common error messages
-          if (bodyContent.includes('404') || 
-              bodyContent.includes('Not Found') || 
-              bodyContent.includes('Error') ||
-              bodyContent.length < 50) { // Very little content = probably an error page
-            showError('Oops! This game might be taking a nap 😴<br>Try again or pick another game!');
-          }
-        } catch (e) {
-          // Cross-origin error is expected, ignore
-        }
-      }, 500);
+    let iframeErrorShown = false;
+
+function handleIframeLoad() {
+  hideLoading();
+
+  iframeErrorShown = false;
+
+  // Give the game time to actually start
+  setTimeout(() => {
+    // If iframe navigated away or closed, abort
+    if (!gameIframe.src || gameIframe.src === 'about:blank') return;
+
+    try {
+      // ⚠️ This will FAIL for cross-origin games — that's GOOD
+      const iframeDoc = gameIframe.contentDocument;
+
+      if (!iframeDoc || !iframeDoc.body) return;
+
+      const text = iframeDoc.body.innerText || '';
+
+      // Only detect VERY explicit error pages
+      const isHardError =
+        text.includes('404 Not Found') ||
+        text.includes('Page Not Found') ||
+        text.includes('File not found') ||
+        text.includes('This site can’t be reached');
+
+      if (isHardError && !iframeErrorShown) {
+        iframeErrorShown = true;
+        showError(
+          'Oops! This game failed to load 💔<br>Try Retry or choose another one!'
+        );
+      }
+    } catch (err) {
+      // ✅ Cross-origin = assume success
+      // DO NOT show error
     }
+  }, 2000); // ⬅️ increased delay
+}
+
 
     // Handle iframe error
     function handleIframeError() {
