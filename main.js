@@ -6155,176 +6155,123 @@ function toggleFullscreen(element) {
 // Function to load game using Blob URL trick
 async function loadGameInIframe(gameUrl, gameTitle) {
   try {
-    // Reset error state
     hideError();
     showLoading();
-    
-    // Clear any existing timeout
-    if (errorTimeout) {
-      clearTimeout(errorTimeout);
-      errorTimeout = null;
-    }
-    
-    // Store the URL for retry
+
     currentGameUrl = gameUrl;
-    
-    // Clear previous iframe content
     gameIframe.src = 'about:blank';
-    
-    // Set a timeout for the fetch (increased to 20 seconds)
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
-    
+
     try {
-      // Fetch the HTML content
-      const response = await fetch(gameUrl, { 
+      const response = await fetch(gameUrl, {
         signal: controller.signal,
         mode: 'cors',
         credentials: 'omit',
-        headers: {
-          'Accept': 'text/html'
-        }
+        headers: { 'Accept': 'text/html' }
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const htmlContent = await response.text();
-      
-      // Check if it's valid HTML
-      if (!htmlContent.includes('<html') && !htmlContent.includes('<!DOCTYPE')) {
+
+      /* ===============================
+         🚨 GITHUB 50MB PACKAGE DETECTOR
+         =============================== */
+      if (
+        htmlContent.includes('Package size exceeded the configured limit') ||
+        htmlContent.includes('Try https://github.com/')
+      ) {
+        hideLoading();
+
+        showError(
+          'This game cannot be loaded.',
+          `
+The game HTML file does not exist or exceeds GitHub’s 50 MB file limit.
+
+This usually means:
+• The HTML file was never uploaded
+• The game is too large for GitHub Pages
+• Only the folder exists, not the compiled HTML
+
+Suggested action:
+Open the repository folder directly and verify the HTML file exists.
+          `.trim()
+        );
+
+        return false;
+      }
+
+      /* ===============================
+         ❌ INVALID / EMPTY HTML CHECK
+         =============================== */
+      if (
+        !htmlContent.includes('<html') &&
+        !htmlContent.includes('<!DOCTYPE')
+      ) {
         throw new Error('Response is not valid HTML');
       }
-      
-      // Create a blob with the HTML content
+
+      /* ===============================
+         ✅ NORMAL LOAD PATH
+         =============================== */
       const blob = new Blob([htmlContent], { type: 'text/html' });
-      
-      // Create a blob URL
       const blobUrl = URL.createObjectURL(blob);
-      
-      // Set iframe src to blob URL - this will execute the HTML properly!
+
       gameIframe.src = blobUrl;
-      
-      // Store for cleanup
-      currentGameBlobUrl = blobUrl;
-      
-      // Clean up old blob URL if exists
+
       if (window.previousBlobUrl) {
         URL.revokeObjectURL(window.previousBlobUrl);
       }
       window.previousBlobUrl = blobUrl;
-      
+
+      return true;
+
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      
-      // Store error info
-      lastError = {
-        type: 'Fetch Error',
-        message: fetchError.message,
-        details: `Failed to fetch from: ${gameUrl}`,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Fallback: use a different approach - create a minimal HTML page that redirects
-      const redirectHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Loading Game...</title>
-            <style>
-              body { 
-                margin: 0; 
-                padding: 0; 
-                background: #000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                color: white;
-                font-family: Arial, sans-serif;
-              }
-            </style>
-            <script>
-              // Redirect after a short delay
-              setTimeout(() => {
-                window.location.href = "${gameUrl}";
-              }, 100);
-            <\/script>
-          </head>
-          <body>
-            Loading game... ⏳
-          </body>
-        </html>
-      `;
-      
-      const fallbackBlob = new Blob([redirectHtml], { type: 'text/html' });
-      const fallbackUrl = URL.createObjectURL(fallbackBlob);
-      gameIframe.src = fallbackUrl;
-      
-      if (window.previousBlobUrl) {
-        URL.revokeObjectURL(window.previousBlobUrl);
-      }
-      window.previousBlobUrl = fallbackUrl;
+
+      hideLoading();
+
+      showError(
+        'The game failed to load.',
+        `
+Fetch failed or was blocked.
+
+Reason:
+${fetchError.message}
+
+This may be caused by:
+• CORS restrictions
+• Missing HTML file
+• Network interruption
+        `.trim()
+      );
+
+      return false;
     }
-    
-    return true;
-    
-  } catch (error) {
-    // Store error info
-    lastError = {
-      type: 'Load Error',
-      message: error.message,
-      details: `Game: ${gameTitle}, URL: ${gameUrl}`,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Ultimate fallback: try to create a proxy page
+
+  } catch (fatalError) {
     hideLoading();
-    
-    const proxyHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>${gameTitle}</title>
-          <style>
-            html, body { 
-              margin: 0; 
-              padding: 0; 
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              background: #000;
-            }
-            iframe {
-              width: 100%;
-              height: 100%;
-              border: none;
-            }
-          </style>
-        </head>
-        <body>
-          <iframe src="${gameUrl}" allowfullscreen></iframe>
-        </body>
-      </html>
-    `;
-    
-    const proxyBlob = new Blob([proxyHtml], { type: 'text/html' });
-    const proxyUrl = URL.createObjectURL(proxyBlob);
-    gameIframe.src = proxyUrl;
-    
-    if (window.previousBlobUrl) {
-      URL.revokeObjectURL(window.previousBlobUrl);
-    }
-    window.previousBlobUrl = proxyUrl;
-    
+
+    showError(
+      'Unexpected loader error.',
+      `
+A fatal error occurred while preparing the game.
+
+Details:
+${fatalError.message}
+      `.trim()
+    );
+
     return false;
   }
 }
+
 
 // Show/hide loading/error states - FIXED: Better error handling
 function showLoading() {
