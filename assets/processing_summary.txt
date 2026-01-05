@@ -1,0 +1,36 @@
+Repository: assets
+Processed files: 31
+Errors: 0
+
+Processed folders:
+- amazin-amazon-adventure
+- archerfish-bug-rush
+- bad-monday-simulator
+- bubble-blast
+- colormuse
+- creature-mobile
+- discduel
+- dokiboomdash
+- generic-fighter-maybe
+- hachamecha
+- hidethebody
+- human-expenditure-program
+- jellywell
+- kanaexe
+- magicgear
+- marble-bash
+- mice-dice
+- monkey-mayhem
+- neomalta
+- oshi-oshi-punch
+- portaboy
+- remotefu
+- snowstoppers
+- sonic2
+- spongebob-fiery
+- spongebob-monster-island
+- spongebob-squarepants-cardbored
+- super-mario-micro-land
+- swingout
+- watersons
+- yandere-simulator

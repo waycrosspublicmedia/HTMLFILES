@@ -1,0 +1,7 @@
+Repository: vendors
+Processed files: 2
+Errors: 0
+
+Processed folders:
+- amanda-the-adventurer
+- bendy
