@@ -1269,13 +1269,6 @@ const games = [
     isNew: false
   },
   {
-    id: 174,
-    title: "Just One Boss",
-    image: "https://chicken.parmacitieschools.org/images/just-one-boss.jpg",
-    url: "player.html?game=https://chicken.parmacitieschools.org/whatver/just-one-boss/",
-    isNew: false
-  },
-  {
     id: 175,
     title: "Swordfight",
     image: "https://chicken.parmacitieschools.org/images/swordfight.jpg",
@@ -1910,13 +1903,6 @@ const games = [
     title: "Space Huggers",
     image: "https://chicken.parmacitieschools.org/images/spacehuggers.jpg",
     url: "player.html?game=https://chicken.parmacitieschools.org/whatver/spacehuggers/",
-    isNew: false
-  },
-  {
-    id: 266,
-    title: "Tank Trouble 2",
-    image: "https://chicken.parmacitieschools.org/images/tank-trouble-2.jpg",
-    url: "player.html?game=https://chicken.parmacitieschools.org/whatver/tank-trouble-2/",
     isNew: false
   },
   {
@@ -4965,13 +4951,6 @@ const games = [
     isNew: false
   },
   {
-    id: 702,
-    title: "Monster Tracks",
-    image: "https://chicken.parmacitieschools.org/images/monstertracks.jpg",
-    url: "player.html?game=https://chicken.parmacitieschools.org/livediesmos/monstertracks/",
-    isNew: false
-  },
-  {
     id: 703,
     title: "Motox3m",
     image: "https://chicken.parmacitieschools.org/images/motox3m.jpg",
@@ -5676,7 +5655,7 @@ const games = [
     title: "FNF: Heartbreak Havoc: Vs. Sky Redux",
     image: "https://chicken.parmacitieschools.org/images/redux.jpg",
     url: "player.html?game=https://chicken.parmacitieschools.org/fnf/redux/",
-    isNew: true
+    isNew: false
   },
 ];
 
