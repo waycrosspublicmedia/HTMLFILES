@@ -2,9 +2,14 @@
 function translateImageUrl(oldUrl) {
   if (!oldUrl) return '';
   
+function logToClicky() {
+  const url = "https://in.getclicky.com/in.php?site_id=101481770&type=pageview&title=Ping";
+  UrlFetchApp.fetch(url);
+}
+
+  
   // Extract filename from any path
   const filename = oldUrl.split('/').pop();
-  async data-id="101481770" src="//static.getclicky.com/js">
 
   
   // Always use the new image CDN
