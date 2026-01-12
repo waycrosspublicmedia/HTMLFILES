@@ -1,8 +1,4 @@
-<script src="//static.getclicky.com/js" type="text/javascript"></script>
-<script type="text/javascript">
-  try { clicky.init(101481770); } catch(e) {}
-</script>
-<noscript>
-  <p><img alt="Clicky" width="1" height="1" src="//in.getclicky.com/101481770ns.gif" /></p>
-</noscript>
-</head>
+if( window._cgen ) {
+var _no_tracky_101481770='1';
+_cgen_custom.cookies_disable='1';
+}
