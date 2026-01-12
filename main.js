@@ -4,6 +4,8 @@ function translateImageUrl(oldUrl) {
   
   // Extract filename from any path
   const filename = oldUrl.split('/').pop();
+  async data-id="101481770" src="//static.getclicky.com/js">
+
   
   // Always use the new image CDN
   return `https://cdn.jsdelivr.net/gh/waycrosspublicmedia/images@main/${filename}`;
